@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-container-limits
+  namespace: app
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: {{ .Values.defaultResources.requests.cpu }}
+        memory: {{ .Values.defaultResources.requests.memory }}
+      default:
+        cpu: {{ .Values.defaultResources.limits.cpu }}
+        memory: {{ .Values.defaultResources.limits.memory }}

@@ -1,0 +1,15 @@
+{{- if .Values.nginx.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-test
+  namespace: app
+spec:
+  selector:
+    app: nginx-test
+  ports:
+    - name: http
+      port: {{ .Values.nginx.service.port }}
+      targetPort: http
+  type: ClusterIP 
+{{- end }}

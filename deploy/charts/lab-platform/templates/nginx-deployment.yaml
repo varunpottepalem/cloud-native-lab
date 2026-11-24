@@ -1,0 +1,44 @@
+{{- if .Values.nginx.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-test
+  namespace: app
+  labels:
+    app: nginx-test
+spec:
+  replicas: {{ .Values.nginx.replicaCount }}
+  selector:
+    matchLabels:
+      app: nginx-test
+  template:
+    metadata:
+      labels:
+        app: nginx-test
+    spec:
+      containers:
+        - name: nginx
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.nginx.service.port }}
+          resources:
+            requests:
+              cpu: {{ .Values.defaultResources.requests.cpu }}
+              memory: {{ .Values.defaultResources.requests.memory }}
+            limits:
+              cpu: {{ .Values.defaultResources.limits.cpu }}
+              memory: {{ .Values.defaultResources.limits.memory }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+{{- end }}

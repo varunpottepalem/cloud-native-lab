@@ -1,0 +1,6 @@
+apiVersion: v2
+name: lab-platform
+description: Shared local cloud-native lab resources
+type: application
+version: 0.1.0
+appVersion: 0.1.0
