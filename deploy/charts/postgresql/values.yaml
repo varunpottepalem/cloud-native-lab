@@ -26,3 +26,14 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+initialization:
+  enabled: true
+  credentialsSecret: postgresql-app-credentials
+  order:
+    username: order_user
+    passwordKey: order-password 
+    database: orders
+  inventory:
+    username: inventory_user
+    passwordKey: inventory-password
+    database: inventory

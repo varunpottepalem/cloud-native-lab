@@ -1,0 +1,126 @@
+{{- if .Values.initialization.enabled }}
+{{- $credentialsSecret := required "initialization.credentialsSecret is required" .Values.initialization.credentialsSecret }}
+{{- $orderPasswordKey := required "initialization.order.passwordKey is required" .Values.initialization.order.passwordKey }}
+{{- $inventoryPasswordKey := required "initialization.inventory.passwordKey is required" .Values.initialization.inventory.passwordKey }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-init
+  namespace: data
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgresql-init
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGHOST
+              value: postgresql
+            - name: PGPORT
+              value: {{ .Values.service.port | quote }}
+            - name: PGUSER
+              value: {{ .Values.auth.username | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.existingSecret }}
+                  key: {{ .Values.auth.passwordKey }}
+            - name: ORDER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credentialsSecret }}
+                  key: {{ $orderPasswordKey }}
+            - name: INVENTORY_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credentialsSecret }}
+                  key: {{ $inventoryPasswordKey }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              psql -v ON_ERROR_STOP=1 \
+                -v order_user='{{ .Values.initialization.order.username }}' \
+                -v order_password="$ORDER_DB_PASSWORD" \
+                -v order_database='{{ .Values.initialization.order.database }}' \
+                -v inventory_user='{{ .Values.initialization.inventory.username }}' \
+                -v inventory_password="$INVENTORY_DB_PASSWORD" \
+                -v inventory_database='{{ .Values.initialization.inventory.database }}' \
+                -d postgres <<'SQL'
+              SELECT format(
+                'CREATE ROLE %I LOGIN PASSWORD %L',
+                :'order_user',
+                :'order_password'
+              ) WHERE NOT EXISTS (
+                SELECT 1 FROM pg_roles WHERE rolname = :'order_user'
+              ) \gexec
+
+              SELECT format(
+                'CREATE ROLE %I LOGIN PASSWORD %L',
+                :'inventory_user',
+                :'inventory_password'
+              ) WHERE NOT EXISTS (
+                SELECT 1 FROM pg_roles WHERE rolname = :'inventory_user'
+              ) \gexec
+
+              SELECT format(
+                'ALTER ROLE %I LOGIN PASSWORD %L',
+                :'order_user',
+                :'order_password'
+              ) \gexec
+
+              SELECT format(
+                'ALTER ROLE %I LOGIN PASSWORD %L',
+                :'inventory_user',
+                :'inventory_password'
+              ) \gexec
+
+              SELECT format(
+                'CREATE DATABASE %I OWNER %I',
+                :'order_database',
+                :'order_user'
+              ) WHERE NOT EXISTS (
+                SELECT 1 FROM pg_database WHERE datname = :'order_database'
+              ) \gexec
+
+              SELECT format(
+                'CREATE DATABASE %I OWNER %I',
+                :'inventory_database',
+                :'inventory_user'
+              ) WHERE NOT EXISTS (
+                SELECT 1 FROM pg_database WHERE datname = :'inventory_database'
+              ) \gexec
+
+              SELECT format(
+                'REVOKE CONNECT ON DATABASE %I FROM PUBLIC',
+                :'order_database'
+              ) \gexec
+
+              SELECT format(
+                'GRANT CONNECT ON DATABASE %I TO %I',
+                :'order_database',
+                :'order_user'
+              ) \gexec
+
+              SELECT format(
+                'REVOKE CONNECT ON DATABASE %I FROM PUBLIC',
+                :'inventory_database'
+              ) \gexec
+
+              SELECT format(
+                'GRANT CONNECT ON DATABASE %I TO %I',
+                :'inventory_database',
+                :'inventory_user'
+              ) \gexec
+              SQL
+{{- end }}
