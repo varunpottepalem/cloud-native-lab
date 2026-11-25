@@ -11,3 +11,8 @@ ports:
 options:
   k3d:
     wait: true
+registries:
+  create:
+    name: registry.localhost
+    host: "0.0.0.0"
+    hostPort: "5000"
