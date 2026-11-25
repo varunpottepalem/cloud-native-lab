@@ -1,0 +1,14 @@
+{{- $name := default .Release.Name .Values.fullnameOverride }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-config
+  namespace: app
+data:
+  {{- if .Values.config}}
+  {{- range $key, $value := .Values.config }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- else }}
+    SERVICE_VERSION: "0.1.0"
+  {{- end }}

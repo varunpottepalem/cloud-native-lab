@@ -1,0 +1,32 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8000
+
+config: {}
+
+secret:
+  enabled: false
+  data: {}
+
+ingress:
+  enabled: false
+  className: traefik
+  host: ""
+  path: /
+
+resources: 
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
