@@ -1,0 +1,28 @@
+replicaCount: 1
+
+image: 
+  repository: postgres
+  tag: 16-alpine
+  pullPolicy: IfNotPresent
+
+service:
+  port: 5432
+
+auth:
+  existingSecret: postgresql-auth
+  passwordKey: postgres-password
+  username: postgres
+
+database: lab
+
+persistence:
+  size: 2Gi
+  storageClassName: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
